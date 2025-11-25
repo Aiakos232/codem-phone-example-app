@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Counter App</title>
     <style>
+        /*
+         * IMPORTANT: Only use 'em' and '%' units in CSS
+         * Other units like px, rem, vh, vw will NOT work properly
+         */
         * {
             margin: 0;
             padding: 0;
@@ -23,40 +27,40 @@
             color: #ffffff;
             display: flex;
             flex-direction: column;
-            padding: 16px;
+            padding: 1em;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 1.875em;
         }
 
         .header h1 {
-            font-size: 24px;
+            font-size: 1.5em;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 0.5em;
         }
 
         .header p {
-            font-size: 14px;
+            font-size: 0.875em;
             color: #8892b0;
         }
 
         .player-info {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
+            border-radius: 0.75em;
+            padding: 1em;
+            margin-bottom: 1.5em;
         }
 
         .player-info .label {
-            font-size: 12px;
+            font-size: 0.75em;
             color: #8892b0;
-            margin-bottom: 4px;
+            margin-bottom: 0.25em;
         }
 
         .player-info .value {
-            font-size: 16px;
+            font-size: 1em;
             font-weight: 500;
         }
 
@@ -69,11 +73,11 @@
         }
 
         .counter-value {
-            font-size: 72px;
+            font-size: 4.5em;
             font-weight: 700;
             color: #64ffda;
-            text-shadow: 0 0 30px rgba(100, 255, 218, 0.3);
-            margin-bottom: 40px;
+            text-shadow: 0 0 1.875em rgba(100, 255, 218, 0.3);
+            margin-bottom: 2.5em;
             transition: transform 0.15s ease, color 0.15s ease;
         }
 
@@ -83,16 +87,16 @@
 
         .button-group {
             display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
+            gap: 1em;
+            margin-bottom: 1.25em;
         }
 
         .btn {
-            width: 64px;
-            height: 64px;
+            width: 4em;
+            height: 4em;
             border: none;
             border-radius: 50%;
-            font-size: 28px;
+            font-size: 1.75em;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -111,7 +115,7 @@
         }
 
         .btn-increment:hover {
-            box-shadow: 0 8px 25px rgba(100, 255, 218, 0.4);
+            box-shadow: 0 0.5em 1.5625em rgba(100, 255, 218, 0.4);
         }
 
         .btn-decrement {
@@ -120,22 +124,22 @@
         }
 
         .btn-decrement:hover {
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+            box-shadow: 0 0.5em 1.5625em rgba(255, 107, 107, 0.4);
         }
 
         .actions {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0.75em;
             margin-top: auto;
         }
 
         .action-btn {
             width: 100%;
-            padding: 14px 20px;
+            padding: 0.875em 1.25em;
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 0.75em;
+            font-size: 1em;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -174,18 +178,18 @@
 
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 2.5em;
             color: #8892b0;
         }
 
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(100, 255, 218, 0.1);
+            width: 2.5em;
+            height: 2.5em;
+            border: 0.1875em solid rgba(100, 255, 218, 0.1);
             border-top-color: #64ffda;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
+            margin: 0 auto 1em;
         }
 
         @keyframes spin {
