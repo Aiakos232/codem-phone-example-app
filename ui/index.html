@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counter App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #8892b0;
+        }
+
+        .player-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .player-info .label {
+            font-size: 12px;
+            color: #8892b0;
+            margin-bottom: 4px;
+        }
+
+        .player-info .value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .counter-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .counter-value {
+            font-size: 72px;
+            font-weight: 700;
+            color: #64ffda;
+            text-shadow: 0 0 30px rgba(100, 255, 218, 0.3);
+            margin-bottom: 40px;
+            transition: transform 0.15s ease, color 0.15s ease;
+        }
+
+        .counter-value.pulse {
+            transform: scale(1.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            width: 64px;
+            height: 64px;
+            border: none;
+            border-radius: 50%;
+            font-size: 28px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-increment {
+            background: linear-gradient(135deg, #64ffda 0%, #4ecdc4 100%);
+            color: #1a1a2e;
+        }
+
+        .btn-increment:hover {
+            box-shadow: 0 8px 25px rgba(100, 255, 218, 0.4);
+        }
+
+        .btn-decrement {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            color: #ffffff;
+        }
+
+        .btn-decrement:hover {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: auto;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-notify {
+            background: rgba(100, 255, 218, 0.2);
+            color: #64ffda;
+        }
+
+        .btn-notify:hover {
+            background: rgba(100, 255, 218, 0.3);
+        }
+
+        .btn-close {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .btn-close:hover {
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8892b0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(100, 255, 218, 0.1);
+            border-top-color: #64ffda;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <div id="app" style="display: none;">
+        <div class="header">
+            <h1>Counter App</h1>
+            <p>External App Example</p>
+        </div>
+
+        <div class="player-info">
+            <div class="label">Phone Number</div>
+            <div class="value" id="phoneNumber">-</div>
+        </div>
+
+        <div class="counter-display">
+            <div class="counter-value" id="counter">0</div>
+            <div class="button-group">
+                <button class="btn btn-decrement" onclick="decrement()">-</button>
+                <button class="btn btn-increment" onclick="increment()">+</button>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="action-btn btn-reset" onclick="resetCounter()">Reset Counter</button>
+            <button class="action-btn btn-notify" onclick="showNotification()">Send Notification</button>
+            <button class="action-btn btn-close" onclick="closeApp()">Close App</button>
+        </div>
+    </div>
+
+    <script>
+        let playerData = null;
+        let currentCount = 0;
+        let pendingCallbacks = {};
+
+        // Generate unique callback ID
+        function generateCallbackId() {
+            return 'cb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Listen for messages from phone
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            if (!data || !data.type) return;
+
+            switch(data.type) {
+                case 'mphone:init':
+                    // App initialized by phone
+                    playerData = data.player;
+                    document.getElementById('phoneNumber').textContent =
+                        data.player?.phoneNumber || 'Unknown';
+
+                    // Hide loading, show app
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('app').style.display = 'flex';
+                    document.getElementById('app').style.flexDirection = 'column';
+                    document.getElementById('app').style.height = '100%';
+
+                    // Load initial counter value
+                    loadCounter();
+                    break;
+
+                case 'mphone:callback:response':
+                    // Handle callback response
+                    const callback = pendingCallbacks[data.callbackId];
+                    if (callback) {
+                        callback(data.result);
+                        delete pendingCallbacks[data.callbackId];
+                    }
+                    break;
+
+                case 'broadcast':
+                    // Handle broadcast from server
+                    console.log('Broadcast received:', data.payload);
+                    break;
+            }
+        });
+
+        // Send callback to server
+        function sendCallback(action, payload, toServer = true) {
+            return new Promise((resolve) => {
+                const callbackId = generateCallbackId();
+                pendingCallbacks[callbackId] = resolve;
+
+                window.parent.postMessage({
+                    type: 'mphone:callback',
+                    action: action,
+                    payload: payload || {},
+                    callbackId: callbackId,
+                    server: toServer  // true = server event, false = client event
+                }, '*');
+
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    if (pendingCallbacks[callbackId]) {
+                        resolve({ success: false, error: 'Timeout' });
+                        delete pendingCallbacks[callbackId];
+                    }
+                }, 10000);
+            });
+        }
+
+        // Update counter display with animation
+        function updateDisplay(value) {
+            currentCount = value;
+            const el = document.getElementById('counter');
+            el.textContent = value;
+            el.classList.add('pulse');
+            setTimeout(() => el.classList.remove('pulse'), 150);
+        }
+
+        // Load counter from server
+        async function loadCounter() {
+            const result = await sendCallback('getCounter');
+            if (result.success) {
+                updateDisplay(result.count);
+            }
+        }
+
+        // Increment counter
+        async function increment() {
+            const result = await sendCallback('increment');
+            if (result.success) {
+                updateDisplay(result.count);
+            }
+        }
+
+        // Decrement counter
+        async function decrement() {
+            const result = await sendCallback('decrement');
+            if (result.success) {
+                updateDisplay(result.count);
+            }
+        }
+
+        // Reset counter
+        async function resetCounter() {
+            const result = await sendCallback('reset');
+            if (result.success) {
+                updateDisplay(result.count);
+            }
+        }
+
+        // Show notification
+        function showNotification() {
+            window.parent.postMessage({
+                type: 'mphone:notification',
+                header: 'Counter App',
+                message: 'Current count is: ' + currentCount
+            }, '*');
+        }
+
+        // Close app
+        function closeApp() {
+            window.parent.postMessage({ type: 'mphone:close' }, '*');
+        }
+
+        // For testing in browser
+        if (window.location.protocol === 'file:' || window.location.hostname === 'localhost') {
+            setTimeout(() => {
+                window.dispatchEvent(new MessageEvent('message', {
+                    data: {
+                        type: 'mphone:init',
+                        player: { phoneNumber: '555-1234' },
+                        theme: 'dark',
+                        language: 'en'
+                    }
+                }));
+            }, 500);
+        }
+    </script>
+</body>
+</html>
