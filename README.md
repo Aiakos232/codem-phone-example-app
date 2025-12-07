@@ -20,6 +20,7 @@ A comprehensive example project demonstrating how to create custom apps for **co
 - **Server-Side Data Management**: Counter value is stored on the server
 - **Callback System**: Asynchronous communication between Client ↔ Server
 - **Notification Support**: Send phone notifications
+- **Job Restrictions**: Limit app visibility by job and grade
 - **Modern UI**: Gradient backgrounds, animations, and responsive design
 - **Player Information**: Phone number display
 
@@ -76,6 +77,10 @@ exports['codem-phone']:AddCustomApp({
     description = 'A simple counter example app',
     defaultApp = false,                -- Is it a default app?
     notification = true,               -- Notification support
+    job = {                            -- Job restrictions (optional)
+        ['police'] = { 3, 4 },         -- Police grade 3 and 4 only
+        ['ambulance'] = { 2, 3 }       -- Ambulance grade 2 and 3 only
+    },
     onOpen = function()                -- Function called when opened
         print('[EXAMPLE-APP] Counter app opened')
     end,
@@ -84,6 +89,43 @@ exports['codem-phone']:AddCustomApp({
     end
 })
 ```
+
+### Job Restrictions
+
+You can restrict app visibility based on player's job and grade using the `job` parameter:
+
+```lua
+-- Only specific grades can see the app
+job = {
+    ['police'] = { 3, 4 },     -- Only police grade 3 and 4
+    ['ambulance'] = { 2, 3 }   -- Only ambulance grade 2 and 3
+}
+
+-- All grades of a job can see the app (empty table)
+job = {
+    ['police'] = {}            -- All police grades
+}
+
+-- All grades of a job can see the app (true)
+job = {
+    ['police'] = true          -- All police grades
+}
+
+-- Multiple jobs with mixed access
+job = {
+    ['police'] = { 3, 4 },     -- Police grade 3 and 4 only
+    ['ambulance'] = {},        -- All ambulance grades
+    ['mechanic'] = true        -- All mechanic grades
+}
+
+-- No job restriction (everyone can see)
+job = nil                      -- Or simply don't include the parameter
+```
+
+**How it works:**
+- If `job` is `nil` or not specified, everyone can see the app
+- If `job` is specified, only players with matching job AND grade can see the app
+- The app automatically appears/disappears when player's job changes
 
 ### 2. Server-Side Callbacks
 

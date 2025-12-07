@@ -16,5 +16,3 @@ server_scripts {
 files {
     'ui/**/*'
 }
-
-dependency 'codem-phone'

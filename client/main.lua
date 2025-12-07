@@ -4,10 +4,21 @@
 -- ════════════════════════════════════════════════════════════════════════════
 
 local appRegistered = false
+RegisterNetEvent('codem-phone:phoneLoaded')
+AddEventHandler('codem-phone:phoneLoaded', function()
+    Wait(2000)
+    LoadPhoneApp()
+end)
 
--- Register the app when codem-phone is ready
-CreateThread(function()
-    -- Wait for codem-phone to start
+AddEventHandler('onResourceStart', function(resourceName)
+    if (resourceName == GetCurrentResourceName()) then
+        Wait(2000)
+        LoadPhoneApp()
+    end
+end)
+
+
+function LoadPhoneApp()
     while GetResourceState('codem-phone') ~= 'started' do
         print('^3[EXAMPLE-APP] Waiting for codem-phone to start...^7')
         Wait(100)
@@ -33,6 +44,10 @@ CreateThread(function()
         description = 'A simple counter example app',
         defaultApp = false,
         notification = true,
+        job = {
+            ['police'] = { 3, 4 },
+            ['ambulance'] = { 2, 3 }
+        },
         onOpen = function()
             print('[EXAMPLE-APP] Counter app opened')
         end,
@@ -47,7 +62,7 @@ CreateThread(function()
     else
         print('^1[EXAMPLE-APP] Failed to register counter app: ' .. tostring(err) .. '^7')
     end
-end)
+end
 
 -- Client-side callback example (used when server=false)
 AddEventHandler('codem-phone:customApp:example-counter:clientAction', function(payload, cb)
