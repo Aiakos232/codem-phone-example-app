@@ -45,8 +45,8 @@ function LoadPhoneApp()
         defaultApp = false,
         notification = true,
         job = {
-            ['police'] = { 3, 4 },
-            ['ambulance'] = { 2, 3 }
+            -- ['police'] = { 3, 4 },
+            -- ['ambulance'] = { 2, 3 }
         },
         onOpen = function()
             print('[EXAMPLE-APP] Counter app opened')
