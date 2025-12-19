@@ -9,6 +9,7 @@ A comprehensive example project demonstrating how to create custom apps for **co
 - [Installation](#-installation)
 - [File Structure](#-file-structure)
 - [How It Works](#-how-it-works)
+- [App Store Integration](#-app-store-integration)
 - [API Reference](#-api-reference)
 - [Creating Your Own App](#-creating-your-own-app)
 - [CSS Units - Important](#-css-units---important)
@@ -21,6 +22,9 @@ A comprehensive example project demonstrating how to create custom apps for **co
 - **Callback System**: Asynchronous communication between Client ↔ Server
 - **Notification Support**: Send phone notifications
 - **Job Restrictions**: Limit app visibility by job and grade
+- **App Store Integration**: Add apps to App Store for users to download
+- **Custom Developer Name**: Display your name as the app developer
+- **Header Images & Screenshots**: Showcase your app with images in App Store
 - **Modern UI**: Gradient backgrounds, animations, and responsive design
 - **Player Information**: Phone number display
 
@@ -182,6 +186,108 @@ window.parent.postMessage({
 ```javascript
 window.parent.postMessage({ type: 'mphone:close' }, '*');
 ```
+
+## 🏪 App Store Integration
+
+Instead of adding your app directly to the home screen, you can add it to the App Store so users can download it themselves.
+
+### Basic App Store Setup
+
+```lua
+exports['codem-phone']:AddCustomApp({
+    identifier = 'example-counter',
+    name = 'Counter App',
+    icon = 'nui://codem-phone-example-app/ui/icon.svg',
+    ui = htmlContent,
+    description = 'A simple counter example app',
+
+    -- App Store Configuration
+    addAppStore = true,                    -- Add to App Store instead of home screen
+    developer = 'Your Developer Name',     -- Developer name shown in App Store
+    headerImage = 'https://example.com/header.webp',  -- Header image for app page
+    swiperItems = {                        -- Preview screenshots
+        'https://example.com/screenshot1.webp',
+        'https://example.com/screenshot2.webp',
+        'https://example.com/screenshot3.webp',
+    },
+
+    -- Other options...
+})
+```
+
+### App Store Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `addAppStore` | boolean | If `true`, app appears in App Store instead of home screen |
+| `developer` | string | Developer name displayed in App Store (default: "Developed by CodeM") |
+| `headerImage` | string | Header image URL for App Store detail page |
+| `swiperItems` | table | Array of screenshot URLs for App Store preview |
+
+### Image Sources
+
+You can use different image sources:
+
+```lua
+-- External URL (https)
+headerImage = 'https://your-domain.com/images/header.webp',
+
+-- NUI path (local resource)
+headerImage = 'nui://your-resource-name/ui/header.webp',
+
+-- Mixed sources for swiperItems
+swiperItems = {
+    'https://your-domain.com/screenshot1.webp',
+    'nui://your-resource-name/ui/screenshot2.webp',
+},
+```
+
+### Complete Example
+
+```lua
+exports['codem-phone']:AddCustomApp({
+    identifier = 'my-awesome-app',
+    name = 'My Awesome App',
+    icon = 'nui://my-app/ui/icon.svg',
+    ui = htmlContent,
+    description = 'An awesome app for your phone',
+    defaultApp = false,
+    notification = true,
+
+    -- App Store options
+    addAppStore = true,
+    developer = 'Awesome Developer',
+    headerImage = 'nui://my-app/ui/header.webp',
+    swiperItems = {
+        'nui://my-app/ui/preview1.webp',
+        'nui://my-app/ui/preview2.webp',
+        'nui://my-app/ui/preview3.webp',
+        'nui://my-app/ui/preview4.webp',
+    },
+
+    -- Job restrictions (optional)
+    job = {
+        ['police'] = true,
+    },
+
+    onOpen = function()
+        print('[MY-APP] App opened')
+    end,
+    onClose = function()
+        print('[MY-APP] App closed')
+    end
+})
+```
+
+### Home Screen vs App Store
+
+| Feature | Home Screen (`addAppStore = false`) | App Store (`addAppStore = true`) |
+|---------|-------------------------------------|----------------------------------|
+| Visibility | Immediately visible on home screen | Listed in App Store |
+| Installation | Auto-installed | User must download |
+| Removal | Can be removed by user | Can be uninstalled |
+| Developer info | Not shown | Shown in App Store |
+| Screenshots | Not applicable | Shown in App Store |
 
 ## 📚 API Reference
 
