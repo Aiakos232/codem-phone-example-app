@@ -7,7 +7,7 @@
 local Config = {
     -- Set to true to add app to App Store (users download it)
     -- Set to false to add app directly to home screen
-    addToAppStore = true,
+    addToAppStore = false,
 }
 
 local appRegistered = false
