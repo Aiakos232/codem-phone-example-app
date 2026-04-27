@@ -1,430 +1,366 @@
-# Codem Phone - Example Custom App
+# Codem Phone — Custom App Example (Vanilla JS)
 
-A comprehensive example project demonstrating how to create custom apps for **codem-phone**. Learn all the core concepts through a simple counter application.
+A complete, build-free reference implementation of a custom app for **codem-phone**. The UI is plain HTML/CSS/JavaScript inside `ui/index.html` — no bundler, no transpiler. Use this flavor when you want the fastest possible iteration loop or when you're learning the platform.
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Features](#-features)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
-- [File Structure](#-file-structure)
-- [How It Works](#-how-it-works)
-- [App Store Integration](#-app-store-integration)
-- [API Reference](#-api-reference)
-- [Creating Your Own App](#-creating-your-own-app)
-- [Troubleshooting](#-troubleshooting)
+- [Requirements](#requirements)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Customizing the UI](#customizing-the-ui)
+- [How It Works](#how-it-works)
+- [AddCustomApp Reference](#addcustomapp-reference)
+- [codem-phone Exports](#codem-phone-exports)
+- [Server-Side Callbacks](#server-side-callbacks)
+- [mphone Protocol](#mphone-protocol)
+- [App Store Integration](#app-store-integration)
+- [Job Restrictions](#job-restrictions)
+- [Important: Resource Naming](#important-resource-naming)
+- [Troubleshooting](#troubleshooting)
 
-## ✨ Features
-
-- **Counter Application**: Increment, decrement, and reset functionality
-- **Server-Side Data Management**: Counter value is stored on the server
-- **Callback System**: Asynchronous communication between Client ↔ Server
-- **Notification Support**: Send phone notifications
-- **Job Restrictions**: Limit app visibility by job and grade
-- **App Store Integration**: Add apps to App Store for users to download
-- **Custom Developer Name**: Display your name as the app developer
-- **Header Images & Screenshots**: Showcase your app with images in App Store
-- **Modern UI**: Gradient backgrounds, animations, and responsive design
-- **Player Information**: Phone number display
-
-## 📦 Requirements
+## Requirements
 
 | Resource | Description |
 |----------|-------------|
 | `codem-phone` | Main phone resource (required as dependency) |
-| FiveM Server | Cerulean or higher fx_version |
+| FiveM Server | `cerulean` or higher `fx_version` |
 
-## 🚀 Installation
+No Node.js, no build tooling — just edit and restart.
 
-1. **Download the Resource**
-   ```bash
-   # Copy to your resources folder
-   resources/[custom-apps]/codem-phone-example-app/
-   ```
+## Project Structure
 
-2. **Add to server.cfg**
+```
+vanillajs/
+├── fxmanifest.lua          # Resource manifest
+├── client/
+│   └── main.lua            # AddCustomApp registration + lifecycle
+├── server/
+│   └── main.lua            # Counter callback handlers (server-side state)
+├── ui/
+│   ├── index.html          # Self-contained UI (HTML/CSS/JS in one file)
+│   └── icon.svg            # App icon shown on home screen and notifications
+└── README.md
+```
+
+## Installation
+
+1. Copy this folder into your `resources/` directory (any category folder is fine).
+2. Add the resource to your `server.cfg`, **after** `codem-phone`:
+
    ```cfg
    ensure codem-phone
-   ensure codem-phone-example-app
+   ensure vanillajs
    ```
 
-3. **Restart the Server**
-   - `codem-phone` must start first (dependency)
+   Replace `vanillajs` with whatever you renamed the folder to. The phone reads the icon from `nui://<resource-name>/ui/icon.svg`, and the client uses `GetCurrentResourceName()` so the icon path tracks the folder name automatically.
 
-## 📁 File Structure
+3. Restart the server (or `start vanillajs` from the txAdmin / live console).
+4. Open the phone in-game — the **Counter App** appears on the home grid.
+
+## Customizing the UI
+
+Edit `ui/index.html` directly. There is no build step. After saving:
 
 ```
-codem-phone-example-app/
-├── fxmanifest.lua      # Resource manifest file
-├── client/
-│   └── main.lua        # Client-side app registration and event handlers
-├── server/
-│   └── main.lua        # Server-side callback handlers and data management
-└── ui/
-    ├── index.html      # Application UI (HTML/CSS/JS)
-    └── icon.svg        # Application icon
+restart vanillajs
 ```
 
-## 🔧 How It Works
+…and re-open the phone. The new HTML is read fresh on each `phoneLoaded` event.
 
-### 1. App Registration (Client-Side)
+The bundled example demonstrates:
 
-The app is registered using the `AddCustomApp` export after `codem-phone` starts:
+- Server-backed state (the counter value lives on the server, not in the iframe)
+- Asynchronous callbacks via `mphone:callback`
+- Phone notifications via `mphone:notification`
+- Receiving `mphone:init` to display the player's phone number
+
+## How It Works
+
+Custom apps are isolated `<iframe>`s inside the phone NUI. Communication between the app and the phone is exclusively via `window.postMessage` (the `mphone:*` protocol). The iframe is sandboxed (`allow-scripts allow-forms allow-popups`) and cannot reach FiveM natives directly.
+
+```
+┌────────────────────────┐   postMessage   ┌──────────────────────┐
+│ ui/index.html (iframe) │ ◄─────────────► │  codem-phone NUI     │
+└────────────────────────┘                 └──────────┬───────────┘
+                                                      │ NUI callback
+                                                      ▼
+                                          ┌────────────────────────┐
+                                          │  client/main.lua       │
+                                          │  (this resource)       │
+                                          └──────────┬─────────────┘
+                                                     │ TriggerEvent
+                                                     ▼
+                                          ┌────────────────────────┐
+                                          │  server/main.lua       │
+                                          │  (this resource)       │
+                                          └────────────────────────┘
+```
+
+Lifecycle:
+
+1. `codem-phone` starts → fires `codem-phone:phoneLoaded` event.
+2. This resource calls `exports['codem-phone']:AddCustomApp(...)` with an HTML payload (`ui/index.html`) and a unique `identifier`.
+3. The phone NUI registers the app and renders its icon on the home grid.
+4. When the user opens the app, the iframe loads with `srcdoc=<your html>` and the phone posts a `mphone:init` message.
+5. The app calls `mphone:callback` to invoke server/client event handlers; the response is delivered back as `mphone:callback:response`.
+
+## AddCustomApp Reference
 
 ```lua
 exports['codem-phone']:AddCustomApp({
-    identifier = 'example-counter',    -- Unique app ID
-    name = 'Counter App',              -- Display name
-    icon = 'nui://phone-app-example/ui/icon.svg',  -- Icon path
-    ui = htmlContent,                  -- HTML content
+    identifier = 'example-counter',                       -- required, must be unique
+    name       = 'Counter App',                           -- required, display name
+    ui         = htmlContent,                             -- required, HTML string
+
+    icon        = 'nui://' .. GetCurrentResourceName() .. '/ui/icon.svg',
     description = 'A simple counter example app',
-    defaultApp = false,                -- Is it a default app?
-    notification = true,               -- Notification support
-    job = {                            -- Job restrictions (optional)
-        ['police'] = { 3, 4 },         -- Police grade 3 and 4 only
-        ['ambulance'] = { 2, 3 }       -- Ambulance grade 2 and 3 only
+    defaultApp  = false,                                  -- if true, comes pre-installed
+    notification = true,                                  -- enable notification banners
+
+    -- Optional: restrict visibility to specific job/grade combinations
+    job = {
+        ['police']    = { 3, 4 },   -- only grades 3 and 4
+        ['ambulance'] = true,       -- all grades
     },
-    onOpen = function()                -- Function called when opened
-        print('[EXAMPLE-APP] Counter app opened')
-    end,
-    onClose = function()               -- Function called when closed
-        print('[EXAMPLE-APP] Counter app closed')
-    end
+
+    -- Optional: lifecycle callbacks (Lua-side)
+    onOpen  = function() print('opened')  end,
+    onClose = function() print('closed') end,
+
+    -- Optional: App Store fields (only used when addAppStore = true)
+    addAppStore = false,
+    developer   = 'Your Name',
+    headerImage = 'https://your-cdn/header.webp',
+    swiperItems = {
+        'https://your-cdn/screenshot1.webp',
+        'https://your-cdn/screenshot2.webp',
+    },
 })
 ```
 
-### Job Restrictions
+Returns `success, err`. `err` is a string when `success` is `false`.
 
-You can restrict app visibility based on player's job and grade using the `job` parameter:
+| Option | Type | Required | Description |
+|--------|------|:--------:|-------------|
+| `identifier` | string | yes | Unique app id; used in event names and routing |
+| `name` | string | yes | Display name on the home screen |
+| `ui` | string | yes | Raw HTML loaded into the iframe via `srcdoc` |
+| `icon` | string | no | NUI URL or absolute URL to the icon image |
+| `description` | string | no | Short description (App Store + accessibility) |
+| `defaultApp` | bool | no | Pre-installed (cannot be uninstalled by user) |
+| `notification` | bool | no | Default `true`; allows notification banners |
+| `job` | table | no | Job/grade visibility filter (see below) |
+| `onOpen` | function | no | Fired when the user enters the app view |
+| `onClose` | function | no | Fired when the user leaves the app view |
+| `addAppStore` | bool | no | If `true`, app appears in App Store instead of home |
+| `developer` | string | no | Developer name shown in App Store |
+| `headerImage` | string | no | App Store detail page header image URL |
+| `swiperItems` | string[] | no | App Store screenshot carousel images |
+
+## codem-phone Exports
 
 ```lua
--- Only specific grades can see the app
-job = {
-    ['police'] = { 3, 4 },     -- Only police grade 3 and 4
-    ['ambulance'] = { 2, 3 }   -- Only ambulance grade 2 and 3
-}
+-- Register an app (home screen or App Store)
+exports['codem-phone']:AddCustomApp(options)            -- → success, err
 
--- All grades of a job can see the app (empty table)
-job = {
-    ['police'] = {}            -- All police grades
-}
+-- Remove an app you previously registered
+exports['codem-phone']:RemoveCustomApp(identifier)      -- → success, err
 
--- All grades of a job can see the app (true)
-job = {
-    ['police'] = true          -- All police grades
-}
+-- Read back an app's config
+exports['codem-phone']:GetCustomApp(identifier)         -- → table | nil
 
--- Multiple jobs with mixed access
-job = {
-    ['police'] = { 3, 4 },     -- Police grade 3 and 4 only
-    ['ambulance'] = {},        -- All ambulance grades
-    ['mechanic'] = true        -- All mechanic grades
-}
+-- Push a broadcast message to your app's UI (e.g. live updates)
+exports['codem-phone']:SendCustomAppMessage(identifier, message)
 
--- No job restriction (everyone can see)
-job = nil                      -- Or simply don't include the parameter
+-- Check if the phone is currently open in the user's view
+exports['codem-phone']:IsPhoneOpen()                    -- → bool
 ```
 
-**How it works:**
-- If `job` is `nil` or not specified, everyone can see the app
-- If `job` is specified, only players with matching job AND grade can see the app
-- The app automatically appears/disappears when player's job changes
+`RemoveCustomApp` and `SendCustomAppMessage` will only succeed if called from the same resource that registered the app (enforced by `GetInvokingResource()`).
 
-### 2. Server-Side Callbacks
+## Server-Side Callbacks
 
-Callbacks are handled using event handlers on the server:
+When the UI calls `mphone:callback` with `server: true`, the phone proxies it to a server-side event in this format:
+
+```
+codem-phone:customApp:{identifier}:{action}
+```
+
+The handler signature is `(source, payload, cb)` — call `cb(result)` to send a response back to the iframe.
 
 ```lua
--- Event format: codem-phone:customApp:{identifier}:{action}
+-- server/main.lua
 AddEventHandler('codem-phone:customApp:example-counter:increment', function(source, payload, cb)
-    -- Process the request
+    local newValue = doSomething(source)
     cb({ success = true, count = newValue })
 end)
 ```
 
-**Available Callbacks:**
-| Action | Description |
-|--------|-------------|
-| `getCounter` | Gets the current counter value |
-| `increment` | Increases counter by 1 |
-| `decrement` | Decreases counter by 1 (min: 0) |
-| `reset` | Resets counter to 0 |
+Responses are returned to the UI as the resolved value of `sendCallback(...)` (see [mphone Protocol](#mphone-protocol)). If you don't call `cb` within 5 seconds the call times out client-side.
 
-### 3. UI ↔ Lua Communication
+For client-side callbacks (`server: false`), use `AddEventHandler` on the **client** with the same name format. Note the client path uses a `Wait` poll, so keep responses fast.
 
-**Sending Messages from UI to Server:**
-```javascript
-window.parent.postMessage({
-    type: 'mphone:callback',
-    action: 'increment',      // Callback action name
-    payload: {},              // Data to send
-    callbackId: 'unique-id',  // Unique ID for response
-    server: true              // true = server, false = client
-}, '*');
-```
+## mphone Protocol
 
-**Receiving Responses:**
-```javascript
-window.addEventListener('message', function(event) {
-    if (event.data.type === 'mphone:callback:response') {
-        // Response is in event.data.result
+All UI ↔ phone communication is `window.postMessage` against `window.parent`.
+
+### App → Host (you send these from `ui/index.html`)
+
+| Type | Payload | Purpose |
+|------|---------|---------|
+| `mphone:callback` | `{ action, payload, callbackId, server }` | Invoke server/client event handler |
+| `mphone:notification` | `{ header, message }` | Show notification banner |
+| `mphone:close` | — | Close the app (return to home) |
+| `mphone:waypoint` | `{ x, y }` | Place a GPS waypoint in-game |
+| `mphone:player` | `{ callbackId }` | Request fresh player info |
+
+### Host → App (sent to your iframe)
+
+| Type | Payload | Purpose |
+|------|---------|---------|
+| `mphone:init` | `{ player, theme, language, identifier }` | Sent on every entry into the app |
+| `mphone:callback:response` | `{ callbackId, result }` | Result of an `mphone:callback` |
+| `mphone:player:response` | `{ callbackId, result }` | Result of an `mphone:player` request |
+| `broadcast` | `{ message }` | Custom message pushed via `SendCustomAppMessage` |
+
+### Minimal callback wrapper
+
+```html
+<script>
+    const pending = {};
+
+    function callback(action, payload = {}, server = true) {
+        return new Promise(resolve => {
+            const id = "cb_" + Math.random().toString(36).slice(2);
+            pending[id] = resolve;
+            window.parent.postMessage({
+                type: "mphone:callback",
+                action,
+                payload,
+                callbackId: id,
+                server,
+            }, "*");
+        });
     }
-});
+
+    window.addEventListener("message", (e) => {
+        const d = e.data;
+        if (d?.type === "mphone:callback:response" && pending[d.callbackId]) {
+            pending[d.callbackId](d.result);
+            delete pending[d.callbackId];
+        }
+        if (d?.type === "mphone:init") {
+            // Player info, theme, language available here
+        }
+    });
+
+    // Example use:
+    callback("increment").then(res => console.log(res.count));
+</script>
 ```
 
-**Sending Notifications:**
-```javascript
-window.parent.postMessage({
-    type: 'mphone:notification',
-    header: 'Counter App',
-    message: 'Current count is: ' + currentCount
-}, '*');
-```
+## App Store Integration
 
-**Closing the App:**
-```javascript
-window.parent.postMessage({ type: 'mphone:close' }, '*');
-```
-
-## 🏪 App Store Integration
-
-Instead of adding your app directly to the home screen, you can add it to the App Store so users can download it themselves.
-
-### Basic App Store Setup
+Set `addAppStore = true` to publish into the App Store instead of installing onto the home screen directly. Users browse and tap **Install** to add it to their phone.
 
 ```lua
 exports['codem-phone']:AddCustomApp({
     identifier = 'example-counter',
-    name = 'Counter App',
-    icon = 'nui://codem-phone-example-app/ui/icon.svg',
-    ui = htmlContent,
+    name       = 'Counter App',
+    ui         = htmlContent,
+    icon       = 'nui://' .. GetCurrentResourceName() .. '/ui/icon.svg',
     description = 'A simple counter example app',
 
-    -- App Store Configuration
-    addAppStore = true,                    -- Add to App Store instead of home screen
-    developer = 'Your Developer Name',     -- Developer name shown in App Store
-    headerImage = 'https://example.com/header.webp',  -- Header image for app page
-    swiperItems = {                        -- Preview screenshots
-        'https://example.com/screenshot1.webp',
-        'https://example.com/screenshot2.webp',
-        'https://example.com/screenshot3.webp',
-    },
-
-    -- Other options...
-})
-```
-
-### App Store Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `addAppStore` | boolean | If `true`, app appears in App Store instead of home screen |
-| `developer` | string | Developer name displayed in App Store (default: "Developed by CodeM") |
-| `headerImage` | string | Header image URL for App Store detail page |
-| `swiperItems` | table | Array of screenshot URLs for App Store preview |
-
-### Image Sources
-
-You can use different image sources:
-
-```lua
--- External URL (https)
-headerImage = 'https://your-domain.com/images/header.webp',
-
--- NUI path (local resource)
-headerImage = 'nui://your-resource-name/ui/header.webp',
-
--- Mixed sources for swiperItems
-swiperItems = {
-    'https://your-domain.com/screenshot1.webp',
-    'nui://your-resource-name/ui/screenshot2.webp',
-},
-```
-
-### Complete Example
-
-```lua
-exports['codem-phone']:AddCustomApp({
-    identifier = 'my-awesome-app',
-    name = 'My Awesome App',
-    icon = 'nui://my-app/ui/icon.svg',
-    ui = htmlContent,
-    description = 'An awesome app for your phone',
-    defaultApp = false,
-    notification = true,
-
-    -- App Store options
     addAppStore = true,
-    developer = 'Awesome Developer',
-    headerImage = 'nui://my-app/ui/header.webp',
+    developer   = 'Your Name',
+    headerImage = 'nui://' .. GetCurrentResourceName() .. '/ui/header.webp',
     swiperItems = {
-        'nui://my-app/ui/preview1.webp',
-        'nui://my-app/ui/preview2.webp',
-        'nui://my-app/ui/preview3.webp',
-        'nui://my-app/ui/preview4.webp',
+        'nui://' .. GetCurrentResourceName() .. '/ui/screenshot1.webp',
+        'nui://' .. GetCurrentResourceName() .. '/ui/screenshot2.webp',
     },
-
-    -- Job restrictions (optional)
-    job = {
-        ['police'] = true,
-    },
-
-    onOpen = function()
-        print('[MY-APP] App opened')
-    end,
-    onClose = function()
-        print('[MY-APP] App closed')
-    end
 })
 ```
 
-### Home Screen vs App Store
+| Field | Used When | Description |
+|-------|-----------|-------------|
+| `addAppStore` | always | Routes the app to App Store when `true` |
+| `developer` | App Store | Developer line shown above the title |
+| `headerImage` | App Store | Banner on the detail page |
+| `swiperItems` | App Store | Screenshot carousel array |
 
-| Feature | Home Screen (`addAppStore = false`) | App Store (`addAppStore = true`) |
-|---------|-------------------------------------|----------------------------------|
-| Visibility | Immediately visible on home screen | Listed in App Store |
-| Installation | Auto-installed | User must download |
-| Removal | Can be removed by user | Can be uninstalled |
-| Developer info | Not shown | Shown in App Store |
-| Screenshots | Not applicable | Shown in App Store |
+You can mix `nui://` resource paths with public `https://` URLs.
 
-## 📚 API Reference
+## Job Restrictions
 
-### PostMessage Types
-
-| Type | Direction | Description |
-|------|-----------|-------------|
-| `mphone:init` | Phone → App | Sent when app is initialized |
-| `mphone:callback` | App → Phone | Sends callback to Server/Client |
-| `mphone:callback:response` | Phone → App | Callback response |
-| `mphone:notification` | App → Phone | Shows notification |
-| `mphone:close` | App → Phone | Closes the app |
-| `broadcast` | Server → App | Broadcast message from server |
-
-### mphone:init Payload
-
-```javascript
-{
-    type: 'mphone:init',
-    player: {
-        phoneNumber: '555-1234',
-        // Other player information
-    },
-    theme: 'dark',
-    language: 'en'
-}
-```
-
-## 🛠 Creating Your Own App
-
-### Step 1: Create the File Structure
-
-```
-your-app/
-├── fxmanifest.lua
-├── client/
-│   └── main.lua
-├── server/
-│   └── main.lua
-└── ui/
-    ├── index.html
-    └── icon.svg
-```
-
-### Step 2: fxmanifest.lua
+`job` accepts the following shapes:
 
 ```lua
-fx_version 'cerulean'
-game 'gta5'
+-- All players (no restriction)
+job = nil    -- or omit the field entirely
 
-author 'Your Name'
-description 'Your Custom Phone App'
-version '1.0.0'
-
-client_scripts {
-    'client/main.lua'
+-- Specific grades only
+job = {
+    ['police']    = { 3, 4 },
+    ['ambulance'] = { 2, 3 },
 }
 
-server_scripts {
-    'server/main.lua'
+-- All grades of a job (use empty table OR true)
+job = {
+    ['police'] = {},
 }
 
-files {
-    'ui/**/*'
+job = {
+    ['police'] = true,
 }
 
-dependency 'codem-phone'
+-- Mixed
+job = {
+    ['police']    = { 3, 4 },   -- specific grades
+    ['ambulance'] = {},         -- all grades
+    ['mechanic']  = true,       -- all grades
+}
 ```
 
-### Step 3: Use a Unique Identifier
+The phone re-evaluates the filter on every `QBCore:Client:OnJobUpdate`, so the app appears and disappears live as the player changes jobs.
+
+## Important: Resource Naming
+
+The icon URL **must** match the actual FiveM resource name. The resource name is the folder name **without** category brackets — for example, if the path is `resources/[examples]/[codem-phone-example-app]/vanillajs`, the resource name is `vanillajs`, not `codem-phone-example-app`.
+
+To stay safe across renames, always use `GetCurrentResourceName()`:
 
 ```lua
--- client/main.lua
-exports['codem-phone']:AddCustomApp({
-    identifier = 'your-unique-app-id',  -- MUST be unique!
-    -- ...
-})
+icon = 'nui://' .. GetCurrentResourceName() .. '/ui/icon.svg',
 ```
 
-### Step 4: Event Naming
+The same rule applies to any other `nui://` URL you use (header images, screenshots, etc.).
 
-```lua
--- Server events must follow this format:
--- codem-phone:customApp:{identifier}:{action}
+## Troubleshooting
 
-AddEventHandler('codem-phone:customApp:your-unique-app-id:yourAction', function(source, payload, cb)
-    -- ...
-end)
-```
+### App doesn't appear on the home screen
 
-## 🔍 Troubleshooting
+- Ensure `codem-phone` is started **before** this resource (`ensure codem-phone` first in `server.cfg`).
+- Check the client console for `[EXAMPLE-APP] Counter app registered successfully!`.
+- If `job` is set, verify the player meets the role/grade.
 
-### App Not Showing
+### Icon shows as broken image
 
-1. Ensure `codem-phone` resource is running
-2. Check console output:
-   ```
-   [EXAMPLE-APP] Waiting for codem-phone to start...
-   [EXAMPLE-APP] Counter app registered successfully!
-   ```
+- The icon URL in `client/main.lua` must reference the real resource name. Use `GetCurrentResourceName()`.
+- Confirm `ui/icon.svg` exists in the resource folder.
+- `fxmanifest.lua` must include the file via `files { 'ui/**/*' }` (this template already does).
 
-### Callbacks Not Working
+### Notification icon is missing
 
-1. Check server console for event handler registration message:
-   ```
-   [EXAMPLE-APP] Server callbacks registered
-   ```
-2. Ensure event names are in the correct format
-3. Verify `server: true` parameter is set correctly
+- Same as above — the notification banner uses the same `icon` URL passed to `AddCustomApp`.
+- If you call `mphone:notification` from the iframe, the phone uses the registered icon automatically.
 
-### UI Not Loading
+### Callbacks always time out
 
-1. Ensure `ui/index.html` file exists
-2. Check that `files { 'ui/**/*' }` is in fxmanifest.lua
-3. Check for HTML syntax errors
+- Server event name format must be `codem-phone:customApp:{identifier}:{action}`.
+- The handler must call `cb(result)` — forgetting to call it leaves the UI hanging until the 10s timeout.
+- Verify `server: true` is set in the iframe `mphone:callback` payload when targeting a server handler.
 
-### Icon Not Showing
+### UI doesn't update after I edited `ui/index.html`
 
-1. Verify the icon path is correct:
-   ```lua
-   icon = 'nui://your-resource-name/ui/icon.svg'
-   ```
-2. Ensure the SVG file is valid
-
-## 📝 Notes
-
-- **Data Persistence**: In this example, counter values are stored in memory. For production apps, use a database (oxmysql, ghmattimysql, etc.)
-- **Security**: Remember to add input validation and rate limiting in production
-- **Performance**: Avoid sending callbacks too frequently
-
-## 📄 License
-
-This example project is for learning purposes and is free to use.
-
-## 👨‍💻 Author
-
-**Codem** - codem-phone development team
-
----
-
-> 💡 **Tip**: Use this example as a foundation to build more complex applications like banking, messaging, GPS, and more!
+- Run `restart <resource-name>` so the phone re-reads the file.
+- Re-open the phone (the iframe `srcdoc` is set on app open).

@@ -1,56 +1,412 @@
-# Codem Phone — Counter Example (React + Vite)
+# Codem Phone — Custom App Example (React + Vite)
 
-React 18 + Vite ile yazılmış custom phone app. JSX, hooks ve modern dev workflow.
-`vite-plugin-singlefile` çıktıyı tek bir self-contained `ui/index.html`'e bundle'lar.
+A complete reference implementation of a custom app for **codem-phone**, built with **React 18 + Vite**. JSX, hooks, modern dev workflow, and a Vite plugin that inlines the entire bundle into one self-contained `ui/index.html`.
 
-## Yapı
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Development Workflow](#development-workflow)
+- [Production Build](#production-build)
+- [How It Works](#how-it-works)
+- [The mphone.js Helper](#the-mphonejs-helper)
+- [AddCustomApp Reference](#addcustomapp-reference)
+- [codem-phone Exports](#codem-phone-exports)
+- [Server-Side Callbacks](#server-side-callbacks)
+- [mphone Protocol](#mphone-protocol)
+- [App Store Integration](#app-store-integration)
+- [Job Restrictions](#job-restrictions)
+- [Important: Resource Naming](#important-resource-naming)
+- [Troubleshooting](#troubleshooting)
+
+## Requirements
+
+| Tool | Version | Description |
+|------|---------|-------------|
+| `codem-phone` | latest | Main phone resource (required dependency) |
+| FiveM Server | `cerulean`+ | Required `fx_version` |
+| Node.js | 18+ | For Vite build tooling |
+| npm / pnpm / yarn | any | Package manager (examples below use npm) |
+
+## Project Structure
 
 ```
-[reactjs]/
-├── fxmanifest.lua
-├── client/main.lua         # AddCustomApp ile telefona kayıt
-├── server/main.lua         # Counter callback'leri
+reactjs/
+├── fxmanifest.lua             # Resource manifest
+├── client/
+│   └── main.lua               # AddCustomApp registration + lifecycle
+├── server/
+│   └── main.lua               # Counter callback handlers
 ├── ui/
-│   ├── index.html          # ◀ Build çıktısı (FiveM bunu okur)
-│   └── icon.svg
-├── src/                    # ◀ Vite projesi (build buradan çalışır)
+│   ├── index.html             # ◄ Build output — FiveM reads this
+│   └── icon.svg               # App icon (home screen + notifications)
+├── src/                       # ◄ Vite project — build entry point
 │   ├── package.json
 │   ├── vite.config.js
-│   ├── index.html
-│   ├── main.jsx            # createRoot
-│   ├── App.jsx             # React functional component + hooks
-│   ├── mphone.js           # codem-phone iframe köprüsü (reusable)
-│   └── style.css
+│   ├── index.html             # Vite entry HTML (NOT the FiveM-loaded one)
+│   ├── main.jsx               # createRoot
+│   ├── App.jsx                # Root component (functional + hooks)
+│   ├── mphone.js              # codem-phone iframe bridge (reusable)
+│   └── style.css              # Global styles
 └── README.md
 ```
 
-## Geliştirme
+`src/index.html` is the **Vite source**. `vite-plugin-singlefile` inlines all assets into one self-contained file and outputs it to `../ui/index.html`. The FiveM resource only loads from `ui/index.html`.
+
+## Installation
+
+1. Copy this folder into your `resources/` directory.
+2. Build the UI at least once before starting the resource:
+
+   ```bash
+   cd src
+   npm install
+   npm run build
+   ```
+
+   This produces `ui/index.html`, which is what the phone reads.
+
+3. Add to `server.cfg` **after** `codem-phone`:
+
+   ```cfg
+   ensure codem-phone
+   ensure reactjs
+   ```
+
+   Replace `reactjs` with your actual folder name. The Lua client uses `GetCurrentResourceName()`, so renaming the folder doesn't break the icon URL.
+
+4. Restart the server. Open the phone in-game — **Counter (React)** appears on the home grid.
+
+## Development Workflow
+
+For UI-only iteration:
 
 ```bash
 cd src
-npm install
-npm run dev      # Vite dev server + HMR
-npm run build    # ../ui/index.html üretir
+npm run dev      # Vite dev server with HMR (http://localhost:5173)
 ```
 
-## Sunucuda çalıştırma
+The dev server has no phone parent, so `mphone:init` never arrives. See [Mocking init during dev](#mocking-init-during-dev) for a fix.
 
-1. `cd src && npm install && npm run build`
-2. `server.cfg`:
-   ```cfg
-   ensure codem-phone
-   ensure [reactjs]
-   ```
-3. Telefonu açtığında **Counter (React)** ikonu görünür
+For in-game testing:
 
-## Anahtar Kavramlar
+```bash
+cd src
+npm run watch    # Rebuilds ../ui/index.html on every save
+```
 
-- **Hooks**: `useState`, `useEffect`, `useCallback` ile state ve side effect.
-- **`src/mphone.js`** — `sendCallback`, `onInit`, `notify`, `close` helper'ları.
-- **Identifier**: `example-counter-react`
-- **Server event format**: `codem-phone:customApp:example-counter-react:{action}`
+Then `restart reactjs` (or your actual resource name) to pick up the new bundle.
 
-## Customize
+### Mocking init during dev
 
-`src/App.jsx` ve `src/style.css`'te değişiklik yap → `cd src && npm run build` →
-resource'u restart et.
+```jsx
+// src/main.jsx
+if (import.meta.env.DEV) {
+    setTimeout(() => {
+        window.dispatchEvent(new MessageEvent("message", {
+            data: {
+                type: "mphone:init",
+                player: { phoneNumber: "555-DEV", name: "Dev Player" },
+                theme: "dark",
+                language: "en",
+            },
+        }));
+    }, 100);
+}
+```
+
+## Production Build
+
+```bash
+cd src
+npm run build    # → ../ui/index.html
+```
+
+`vite-plugin-singlefile` does the heavy lifting — JS, CSS, and assets are inlined into one file. The build leaves `ui/icon.svg` untouched (`emptyOutDir: false`).
+
+After the build completes:
+
+```
+restart reactjs
+```
+
+## How It Works
+
+Custom apps run inside an isolated `<iframe>` with sandbox `allow-scripts allow-forms allow-popups`. They can't access FiveM natives — instead they communicate with the phone via `window.postMessage` (the `mphone:*` protocol).
+
+```
+┌──────────────────────────┐   postMessage   ┌──────────────────────┐
+│ ui/index.html (iframe)   │ ◄─────────────► │  codem-phone NUI     │
+│ (React app, single file) │                 └──────────┬───────────┘
+└──────────────────────────┘                            │ NUI callback
+                                                        ▼
+                                            ┌──────────────────────┐
+                                            │  client/main.lua     │
+                                            └──────────┬───────────┘
+                                                       │ TriggerEvent
+                                                       ▼
+                                            ┌──────────────────────┐
+                                            │  server/main.lua     │
+                                            └──────────────────────┘
+```
+
+Lifecycle:
+
+1. `codem-phone` fires `codem-phone:phoneLoaded`.
+2. `client/main.lua` reads `ui/index.html` from the resource and calls `AddCustomApp`.
+3. The phone NUI receives the registration and renders the icon.
+4. When the user opens the app, the iframe loads with `srcdoc=<your html>` and the phone posts `mphone:init`.
+5. Your React app calls `sendCallback(...)` from `mphone.js` to invoke server/client handlers.
+
+## The mphone.js Helper
+
+`src/mphone.js` is the reusable iframe bridge. It wraps the raw `postMessage` protocol in a friendlier API.
+
+```jsx
+import { useEffect, useState } from "react";
+import { sendCallback, onInit, notify, close, setWaypoint } from "./mphone";
+
+function App() {
+    const [count, setCount] = useState(0);
+    const [player, setPlayer] = useState(null);
+
+    useEffect(() => {
+        onInit(setPlayer);
+    }, []);
+
+    const increment = async () => {
+        const res = await sendCallback("increment", {}, true);
+        if (res.success) setCount(res.count);
+    };
+
+    return (
+        <div>
+            <p>{player?.phoneNumber}</p>
+            <button onClick={increment}>+ ({count})</button>
+            <button onClick={() => notify("Counter", `Count is ${count}`)}>Notify</button>
+            <button onClick={close}>Close</button>
+        </div>
+    );
+}
+```
+
+| Function | Signature | Notes |
+|----------|-----------|-------|
+| `sendCallback(action, payload, toServer = true)` | `Promise<result>` | 10s timeout; resolves with `{ success: false, error: "Timeout" }` if exceeded |
+| `onInit(cb)` | `cb(player)` | Listens for every `mphone:init`; safe to call once in `useEffect` |
+| `notify(header, message)` | `void` | Triggers the phone notification banner |
+| `close()` | `void` | Returns to phone home |
+| `setWaypoint(x, y)` | `void` | GTA world coordinates |
+
+## AddCustomApp Reference
+
+```lua
+exports['codem-phone']:AddCustomApp({
+    identifier = 'example-counter-react',
+    name       = 'Counter (React)',
+    ui         = htmlContent,                                          -- contents of ui/index.html
+
+    icon        = 'nui://' .. GetCurrentResourceName() .. '/ui/icon.svg',
+    description = 'Counter example built with React + Vite',
+    defaultApp  = false,
+    notification = true,
+
+    job = {
+        ['police']    = { 3, 4 },
+        ['ambulance'] = true,
+    },
+
+    onOpen  = function() print('opened')  end,
+    onClose = function() print('closed') end,
+
+    addAppStore = false,
+    developer   = 'Your Name',
+    headerImage = 'https://your-cdn/header.webp',
+    swiperItems = { 'https://your-cdn/screenshot1.webp' },
+})
+```
+
+Returns `success, err`.
+
+| Option | Type | Required | Description |
+|--------|------|:--------:|-------------|
+| `identifier` | string | yes | Unique app id; used in event names and routing |
+| `name` | string | yes | Display name on the home screen |
+| `ui` | string | yes | Raw HTML loaded into the iframe via `srcdoc` |
+| `icon` | string | no | NUI URL or absolute URL to the icon image |
+| `description` | string | no | Short description (App Store + accessibility) |
+| `defaultApp` | bool | no | Pre-installed (cannot be uninstalled) |
+| `notification` | bool | no | Default `true`; allows notification banners |
+| `job` | table | no | Job/grade visibility filter |
+| `onOpen` | function | no | Fired when the user enters the app view |
+| `onClose` | function | no | Fired when the user leaves the app view |
+| `addAppStore` | bool | no | If `true`, app appears in App Store instead of home |
+| `developer` | string | no | Developer line shown in App Store |
+| `headerImage` | string | no | App Store detail page header image URL |
+| `swiperItems` | string[] | no | App Store screenshot carousel images |
+
+## codem-phone Exports
+
+```lua
+exports['codem-phone']:AddCustomApp(options)            -- → success, err
+exports['codem-phone']:RemoveCustomApp(identifier)      -- → success, err
+exports['codem-phone']:GetCustomApp(identifier)         -- → table | nil
+exports['codem-phone']:SendCustomAppMessage(id, msg)    -- → success, err
+exports['codem-phone']:IsPhoneOpen()                    -- → bool
+```
+
+`RemoveCustomApp` and `SendCustomAppMessage` only succeed when called from the same resource that registered the app.
+
+`SendCustomAppMessage` reaches your React app as a `broadcast` event — listen for it via:
+
+```jsx
+useEffect(() => {
+    const handler = (e) => {
+        if (e.data?.type === "broadcast") {
+            console.log("Broadcast:", e.data.message);
+        }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+}, []);
+```
+
+## Server-Side Callbacks
+
+When the iframe calls `sendCallback(action, payload, true)`, the phone proxies it to a server-side event in this format:
+
+```
+codem-phone:customApp:{identifier}:{action}
+```
+
+```lua
+-- server/main.lua
+AddEventHandler('codem-phone:customApp:example-counter-react:increment', function(source, payload, cb)
+    local newValue = doSomething(source)
+    cb({ success = true, count = newValue })
+end)
+```
+
+The handler signature is `(source, payload, cb)` — call `cb(result)` to send the response back. Forgetting `cb` leaves the UI hanging until the 10s `sendCallback` timeout.
+
+For client-side callbacks (`sendCallback(..., false)`), use `AddEventHandler` on the **client** with the same name format.
+
+## mphone Protocol
+
+### App → Host (your iframe sends these)
+
+| Type | Payload | Purpose |
+|------|---------|---------|
+| `mphone:callback` | `{ action, payload, callbackId, server }` | Invoke server/client event handler |
+| `mphone:notification` | `{ header, message }` | Show notification banner |
+| `mphone:close` | — | Close the app (return to home) |
+| `mphone:waypoint` | `{ x, y }` | Place a GPS waypoint in-game |
+| `mphone:player` | `{ callbackId }` | Request fresh player info |
+
+### Host → App (phone sends these to your iframe)
+
+| Type | Payload | Purpose |
+|------|---------|---------|
+| `mphone:init` | `{ player, theme, language, identifier }` | Sent on every entry into the app |
+| `mphone:callback:response` | `{ callbackId, result }` | Result of an `mphone:callback` |
+| `mphone:player:response` | `{ callbackId, result }` | Result of an `mphone:player` request |
+| `broadcast` | `{ message }` | Pushed via `SendCustomAppMessage` |
+
+`mphone.js` already handles `mphone:callback:response` plumbing — you only need to deal with `mphone:init` and `broadcast` directly.
+
+## App Store Integration
+
+Set `addAppStore = true` to publish into the App Store instead of installing onto the home screen.
+
+```lua
+exports['codem-phone']:AddCustomApp({
+    identifier = 'example-counter-react',
+    name       = 'Counter (React)',
+    ui         = htmlContent,
+    icon       = 'nui://' .. GetCurrentResourceName() .. '/ui/icon.svg',
+    description = 'Counter example built with React + Vite',
+
+    addAppStore = true,
+    developer   = 'Your Name',
+    headerImage = 'nui://' .. GetCurrentResourceName() .. '/ui/header.webp',
+    swiperItems = {
+        'nui://' .. GetCurrentResourceName() .. '/ui/screenshot1.webp',
+        'nui://' .. GetCurrentResourceName() .. '/ui/screenshot2.webp',
+    },
+})
+```
+
+| Field | Used When | Description |
+|-------|-----------|-------------|
+| `addAppStore` | always | Routes the app to App Store when `true` |
+| `developer` | App Store | Developer line above the title |
+| `headerImage` | App Store | Banner on the detail page |
+| `swiperItems` | App Store | Screenshot carousel array |
+
+You can mix `nui://` resource paths and public `https://` URLs in `headerImage`/`swiperItems`. To use NUI paths, drop the assets into `ui/` and they'll be served by FiveM automatically (`files { 'ui/**/*' }` in `fxmanifest.lua`).
+
+## Job Restrictions
+
+```lua
+job = nil                                           -- everyone
+job = { ['police'] = { 3, 4 } }                     -- only police grade 3 and 4
+job = { ['police'] = {} }                           -- all police grades
+job = { ['police'] = true }                         -- all police grades (alt syntax)
+job = {
+    ['police']    = { 3, 4 },
+    ['ambulance'] = {},
+    ['mechanic']  = true,
+}
+```
+
+The phone re-evaluates the filter on every `QBCore:Client:OnJobUpdate`, so the app appears and disappears live as the player changes jobs.
+
+## Important: Resource Naming
+
+The icon URL must match the actual FiveM resource name — the folder name **without** category brackets. For `resources/[examples]/[codem-phone-example-app]/reactjs` the resource is `reactjs`, not `codem-phone-example-app`.
+
+Always use `GetCurrentResourceName()` so renaming the folder doesn't break the icon URL:
+
+```lua
+icon = 'nui://' .. GetCurrentResourceName() .. '/ui/icon.svg',
+```
+
+Apply the same pattern to header images, screenshots, and any other `nui://` URL.
+
+## Troubleshooting
+
+### `Failed to load ui/index.html (run npm run build?)`
+
+You haven't built the UI yet. Run:
+
+```bash
+cd src
+npm install   # first time only
+npm run build
+```
+
+### App doesn't appear on the home screen
+
+- Ensure `codem-phone` starts **before** this resource (`ensure codem-phone` first in `server.cfg`).
+- Check the client console for `[EXAMPLE-REACT] Counter (React) registered successfully!`.
+- If `job` is set, verify the player meets the role/grade.
+
+### Icon shows as broken image
+
+- The icon URL in `client/main.lua` must reference the real resource name. Use `GetCurrentResourceName()`.
+- Confirm `ui/icon.svg` exists in the resource folder (`emptyOutDir: false` in `vite.config.js` preserves it across builds).
+
+### `npm run build` fails with `manualChunks not supported`
+
+`vite-plugin-singlefile` already sets `inlineDynamicImports: true`, which is incompatible with `manualChunks`. Make sure you don't add a custom `rollupOptions.output.manualChunks` entry — the plugin handles bundling on its own.
+
+### Callbacks always time out
+
+- Server event name format must be `codem-phone:customApp:{identifier}:{action}`.
+- The handler must call `cb(result)`. Forgetting it leaves the UI hanging until the 10s `sendCallback` timeout.
+- Verify the third argument to `sendCallback` is `true` for server callbacks.
+
+### HMR works in `npm run dev` but not in-game
+
+That's by design — the in-game iframe loads a built `ui/index.html` snapshot. Use `npm run watch` for fast in-game iteration, or test most logic in the standalone dev server first.

@@ -46,7 +46,7 @@ function LoadPhoneApp()
     local success, err = exports['codem-phone']:AddCustomApp({
         identifier = 'example-counter',
         name = 'Counter App',
-        icon = 'nui://codem-phone-example-app/ui/icon.svg',
+        icon = 'nui://' .. GetCurrentResourceName() .. '/ui/icon.svg',
         ui = htmlContent,
         description = 'A simple counter example app',
         defaultApp = false,

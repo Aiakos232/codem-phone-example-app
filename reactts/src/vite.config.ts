@@ -12,11 +12,5 @@ export default defineConfig({
         emptyOutDir: false,
         cssCodeSplit: false,
         assetsInlineLimit: 100000000,
-        rollupOptions: {
-            output: {
-                inlineDynamicImports: true,
-                manualChunks: () => "everything.js",
-            },
-        },
     },
 });

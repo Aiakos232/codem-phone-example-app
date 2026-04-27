@@ -3,7 +3,7 @@
 -- ════════════════════════════════════════════════════════════════════════════
 
 local Config = {
-    addToAppStore = false,
+    addToAppStore = true,
 }
 
 RegisterNetEvent('codem-phone:phoneLoaded')
@@ -42,10 +42,23 @@ function LoadPhoneApp()
         defaultApp = false,
         notification = true,
 
-        addAppStore = Config.addToAppStore,
-        developer = 'Example Developer',
 
-        job = {},
+        addAppStore = Config.addToAppStore,                                                                   -- If true, app appears in App Store instead of home screen
+        developer = 'Example Developer',                                                                      -- Optional: Developer name shown in App Store
+        headerImage =
+        "https://aiakos.net/codem/api.php?script=codem-phone&subfolder=appstoreswiperitems&file=twix-1.webp", -- Optional: Header image for App Store page (e.g., 'nui://phone-app-example/ui/header.png')
+        swiperItems = {
+            'https://aiakos.net/codem/api.php?script=codem-phone&subfolder=appstoreswiperitems&file=twix-1.webp',
+            'https://aiakos.net/codem/api.php?script=codem-phone&subfolder=appstoreswiperitems&file=twix-2.webp',
+            'https://aiakos.net/codem/api.php?script=codem-phone&subfolder=appstoreswiperitems&file=twix-3.webp',
+            'https://aiakos.net/codem/api.php?script=codem-phone&subfolder=appstoreswiperitems&file=twix-4.webp',
+        }, -- Optional: Preview images for App Store page
+
+        -- Job restrictions (optional)
+        job = {
+            -- ['police'] = { 3, 4 },  -- Only police grade 3 and 4
+            -- ['ambulance'] = true     -- All ambulance grades
+        },
 
         onOpen = function() print('[EXAMPLE-REACT-TS] Counter app opened') end,
         onClose = function() print('[EXAMPLE-REACT-TS] Counter app closed') end,
