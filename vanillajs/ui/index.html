@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Counter App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100%;
+            height: 100vh;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: "SF Pro", "Roboto", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: #030b16;
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* App fills viewport via absolute positioning (iframe-safe) */
+        .app-shell {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 64px 24px 32px;
+        }
+
+        /* ── Header ─────────────────────────────────────────────────────────── */
+        .header {
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+            line-height: 1.1;
+        }
+        .header p {
+            margin-top: 6px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: -0.23px;
+        }
+
+        /* ── Player info card ───────────────────────────────────────────────── */
+        .player-info {
+            background: #101622;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+        }
+        .player-info .label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: -0.23px;
+            margin-bottom: 4px;
+        }
+        .player-info .value {
+            font-size: 16px;
+            font-weight: 510;
+            letter-spacing: -0.4px;
+        }
+
+        /* ── Counter ────────────────────────────────────────────────────────── */
+        .counter-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            min-height: 0;
+        }
+        .counter-value {
+            font-size: 96px;
+            font-weight: 700;
+            color: #64ffda;
+            letter-spacing: -2px;
+            text-shadow: 0 0 24px rgba(100, 255, 218, 0.25);
+            transition: transform 0.15s ease;
+        }
+        .counter-value.pulse { transform: scale(1.08); }
+        .button-group { display: flex; gap: 16px; }
+        .btn {
+            width: 64px;
+            height: 64px;
+            border: none;
+            border-radius: 50%;
+            font-size: 28px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s ease, opacity 0.15s ease;
+            box-shadow:
+                inset 0 4px 2px rgba(255, 255, 255, 0.25),
+                0 6px 16px rgba(0, 0, 0, 0.35);
+        }
+        .btn:active { transform: scale(0.94); opacity: 0.9; }
+        .btn-decrement { background: linear-gradient(180deg, #ff6b6b 0%, #d94545 100%); color: #fff; }
+        .btn-increment { background: linear-gradient(180deg, #64ffda 0%, #2fbfa0 100%); color: #0a1f1a; }
+
+        /* ── Action buttons ─────────────────────────────────────────────────── */
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .action-btn {
+            width: 100%;
+            height: 48px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 510;
+            letter-spacing: -0.23px;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+        .action-btn:active { opacity: 0.85; transform: scale(0.99); }
+        .btn-reset { background: rgba(255, 255, 255, 0.08); color: #fff; }
+        .btn-notify { background: rgba(100, 255, 218, 0.15); color: #64ffda; }
+        .btn-close { background: rgba(255, 107, 107, 0.15); color: #ff6b6b; }
+
+        /* ── Loading spinner ────────────────────────────────────────────────── */
+        .loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            z-index: 5;
+        }
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(100, 255, 218, 0.15);
+            border-top-color: #64ffda;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading…</p>
+    </div>
+
+    <div id="app" class="app-shell" style="display: none;">
+        <div class="header">
+            <h1>Counter</h1>
+            <p>External app example</p>
+        </div>
+
+        <div class="player-info">
+            <div class="label">Phone Number</div>
+            <div class="value" id="phoneNumber">—</div>
+        </div>
+
+        <div class="counter-display">
+            <div class="counter-value" id="counter">0</div>
+            <div class="button-group">
+                <button class="btn btn-decrement" type="button" onclick="decrement()">−</button>
+                <button class="btn btn-increment" type="button" onclick="increment()">+</button>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="action-btn btn-reset" type="button" onclick="resetCounter()">Reset</button>
+            <button class="action-btn btn-notify" type="button" onclick="showNotification()">Notify</button>
+            <button class="action-btn btn-close" type="button" onclick="closeApp()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let playerData = null;
+        let currentCount = 0;
+        const pendingCallbacks = {};
+
+        function generateCallbackId() {
+            return "cb_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+        }
+
+        // ── Phone → app messages ────────────────────────────────────────────────
+        window.addEventListener("message", (event) => {
+            const data = event.data;
+            if (!data || !data.type) return;
+
+            switch (data.type) {
+                case "mphone:init":
+                    playerData = data.player;
+                    document.getElementById("phoneNumber").textContent =
+                        data.player?.phoneNumber || "—";
+                    document.getElementById("loading").style.display = "none";
+                    document.getElementById("app").style.display = "flex";
+                    loadCounter();
+                    break;
+
+                case "mphone:callback:response":
+                    {
+                        const cb = pendingCallbacks[data.callbackId];
+                        if (cb) {
+                            cb(data.result);
+                            delete pendingCallbacks[data.callbackId];
+                        }
+                    }
+                    break;
+
+                case "broadcast":
+                    // Server'dan gelen broadcast mesajları
+                    break;
+            }
+        });
+
+        // ── App → phone callback wrapper ────────────────────────────────────────
+        function sendCallback(action, payload, toServer = true) {
+            return new Promise((resolve) => {
+                const callbackId = generateCallbackId();
+                pendingCallbacks[callbackId] = resolve;
+                window.parent.postMessage({
+                    type: "mphone:callback",
+                    action,
+                    payload: payload || {},
+                    callbackId,
+                    server: toServer,
+                }, "*");
+                setTimeout(() => {
+                    if (pendingCallbacks[callbackId]) {
+                        resolve({ success: false, error: "Timeout" });
+                        delete pendingCallbacks[callbackId];
+                    }
+                }, 10000);
+            });
+        }
+
+        function updateDisplay(value) {
+            currentCount = value;
+            const el = document.getElementById("counter");
+            el.textContent = value;
+            el.classList.add("pulse");
+            setTimeout(() => el.classList.remove("pulse"), 150);
+        }
+
+        async function loadCounter() {
+            const result = await sendCallback("getCounter");
+            if (result.success) updateDisplay(result.count);
+        }
+
+        async function increment() {
+            const result = await sendCallback("increment");
+            if (result.success) updateDisplay(result.count);
+        }
+
+        async function decrement() {
+            const result = await sendCallback("decrement");
+            if (result.success) updateDisplay(result.count);
+        }
+
+        async function resetCounter() {
+            const result = await sendCallback("reset");
+            if (result.success) updateDisplay(result.count);
+        }
+
+        function showNotification() {
+            window.parent.postMessage({
+                type: "mphone:notification",
+                header: "Counter",
+                message: "Current count: " + currentCount,
+            }, "*");
+        }
+
+        function closeApp() {
+            window.parent.postMessage({ type: "mphone:close" }, "*");
+        }
+
+        // Standalone test (file:// or localhost)
+        if (window.location.protocol === "file:" || window.location.hostname === "localhost") {
+            setTimeout(() => {
+                window.dispatchEvent(new MessageEvent("message", {
+                    data: {
+                        type: "mphone:init",
+                        player: { phoneNumber: "555-1234" },
+                        theme: "dark",
+                        language: "en",
+                    },
+                }));
+            }, 300);
+        }
+    </script>
+</body>
+</html>

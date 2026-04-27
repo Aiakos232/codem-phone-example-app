@@ -12,7 +12,6 @@ A comprehensive example project demonstrating how to create custom apps for **co
 - [App Store Integration](#-app-store-integration)
 - [API Reference](#-api-reference)
 - [Creating Your Own App](#-creating-your-own-app)
-- [CSS Units - Important](#-css-units---important)
 - [Troubleshooting](#-troubleshooting)
 
 ## ✨ Features
@@ -378,49 +377,6 @@ AddEventHandler('codem-phone:customApp:your-unique-app-id:yourAction', function(
 end)
 ```
 
-## ⚠️ CSS Units - Important
-
-> **CRITICAL**: You must use **only `em` and `%` units** in your CSS styling. Other CSS units like `px`, `rem`, `vh`, `vw`, etc. **will NOT work properly** within the phone interface.
-
-### ✅ Correct Usage
-
-```css
-.container {
-    width: 100%;
-    padding: 1em;
-    margin: 0.5em;
-    font-size: 1.2em;
-}
-
-.button {
-    width: 50%;
-    height: 3em;
-    border-radius: 0.5em;
-}
-```
-
-### ❌ Incorrect Usage
-
-```css
-/* DO NOT USE THESE UNITS */
-.container {
-    width: 300px;      /* ❌ px will not work */
-    padding: 1rem;     /* ❌ rem will not work */
-    margin: 2vh;       /* ❌ vh will not work */
-    font-size: 16px;   /* ❌ px will not work */
-}
-```
-
-### Unit Conversion Guide
-
-| Instead of | Use |
-|------------|-----|
-| `16px` | `1em` |
-| `100vh` | `100%` |
-| `100vw` | `100%` |
-| `1rem` | `1em` |
-| `24px` | `1.5em` |
-
 ## 🔍 Troubleshooting
 
 ### App Not Showing
@@ -455,18 +411,11 @@ end)
    ```
 2. Ensure the SVG file is valid
 
-### Styling Issues
-
-1. **Check your CSS units** - only `em` and `%` are supported
-2. Replace all `px`, `rem`, `vh`, `vw` units with `em` or `%`
-3. Test your UI by resizing to ensure it scales properly
-
 ## 📝 Notes
 
 - **Data Persistence**: In this example, counter values are stored in memory. For production apps, use a database (oxmysql, ghmattimysql, etc.)
 - **Security**: Remember to add input validation and rate limiting in production
 - **Performance**: Avoid sending callbacks too frequently
-- **CSS Units**: Always use `em` and `%` for proper scaling within the phone interface
 
 ## 📄 License
 
