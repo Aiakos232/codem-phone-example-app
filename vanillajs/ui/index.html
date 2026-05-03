@@ -24,7 +24,10 @@
             display: flex;
             flex-direction: column;
             padding: 64px 24px 32px;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
+        .app-shell::-webkit-scrollbar { display: none; }
 
         /* ── Header ─────────────────────────────────────────────────────────── */
         .header {
@@ -63,32 +66,35 @@
             letter-spacing: -0.4px;
         }
 
-        /* ── Counter ────────────────────────────────────────────────────────── */
+        /* ── Counter (compact) ──────────────────────────────────────────────── */
         .counter-display {
-            flex: 1;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 28px;
-            min-height: 0;
+            justify-content: space-between;
+            gap: 16px;
+            background: #101622;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
         }
         .counter-value {
-            font-size: 96px;
+            font-size: 44px;
             font-weight: 700;
             color: #64ffda;
-            letter-spacing: -2px;
-            text-shadow: 0 0 24px rgba(100, 255, 218, 0.25);
+            letter-spacing: -1px;
+            text-shadow: 0 0 18px rgba(100, 255, 218, 0.25);
             transition: transform 0.15s ease;
+            min-width: 70px;
         }
         .counter-value.pulse { transform: scale(1.08); }
-        .button-group { display: flex; gap: 16px; }
+        .button-group { display: flex; gap: 10px; }
         .btn {
-            width: 64px;
-            height: 64px;
+            width: 48px;
+            height: 48px;
             border: none;
             border-radius: 50%;
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 600;
             cursor: pointer;
             display: flex;
@@ -103,19 +109,102 @@
         .btn-decrement { background: linear-gradient(180deg, #ff6b6b 0%, #d94545 100%); color: #fff; }
         .btn-increment { background: linear-gradient(180deg, #64ffda 0%, #2fbfa0 100%); color: #0a1f1a; }
 
+        /* ── Section title ──────────────────────────────────────────────────── */
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.45);
+            margin: 4px 0 12px;
+        }
+
+        /* ── Components library grid ────────────────────────────────────────── */
+        .lib-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .lib-btn {
+            background: #101622;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border-radius: 14px;
+            padding: 14px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .lib-btn:hover { background: #16202f; }
+        .lib-btn:active { transform: scale(0.98); }
+        .lib-btn .lib-icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+        .lib-btn .lib-title {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: -0.23px;
+        }
+        .lib-btn .lib-sub {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.45);
+            letter-spacing: -0.1px;
+        }
+
+        /* ── Last result panel ──────────────────────────────────────────────── */
+        .result-panel {
+            background: #060d18;
+            border: 1px solid rgba(100, 255, 218, 0.15);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
+            min-height: 64px;
+            overflow: hidden;
+        }
+        .result-panel .result-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: #64ffda;
+            margin-bottom: 6px;
+        }
+        .result-panel pre {
+            font-family: "SF Mono", "Roboto Mono", monospace;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.4;
+            margin: 0;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        .result-panel pre::-webkit-scrollbar { width: 4px; }
+        .result-panel pre::-webkit-scrollbar-thumb {
+            background: rgba(100, 255, 218, 0.3);
+            border-radius: 2px;
+        }
+
         /* ── Action buttons ─────────────────────────────────────────────────── */
         .actions {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            margin-top: 16px;
+            margin-top: 4px;
         }
         .action-btn {
             width: 100%;
-            height: 48px;
+            height: 44px;
             border: none;
             border-radius: 14px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 510;
             letter-spacing: -0.23px;
             cursor: pointer;
@@ -175,6 +264,54 @@
             </div>
         </div>
 
+        <!-- ═══════════════════════════════════════════════════════════════════
+             COMPONENTS LIBRARY — built-in popup/dialog API examples
+             (lb-phone uyumlu globalThis.components.* API'si)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <div class="section-title">Components Library</div>
+        <div class="lib-grid">
+            <button class="lib-btn" type="button" onclick="examplePopUp()">
+                <span class="lib-icon">⚠️</span>
+                <span class="lib-title">setPopUp</span>
+                <span class="lib-sub">Confirm dialog</span>
+            </button>
+            <button class="lib-btn" type="button" onclick="exampleContactSelector()">
+                <span class="lib-icon">👤</span>
+                <span class="lib-title">setContactSelector</span>
+                <span class="lib-sub">Pick a contact</span>
+            </button>
+            <button class="lib-btn" type="button" onclick="exampleGallery()">
+                <span class="lib-icon">🖼️</span>
+                <span class="lib-title">setGallery</span>
+                <span class="lib-sub">Pick photo(s)</span>
+            </button>
+            <button class="lib-btn" type="button" onclick="exampleEmojiPicker()">
+                <span class="lib-icon">😀</span>
+                <span class="lib-title">setEmojiPickerVisible</span>
+                <span class="lib-sub">Pick an emoji</span>
+            </button>
+            <button class="lib-btn" type="button" onclick="exampleNearbyPlayers()">
+                <span class="lib-icon">📡</span>
+                <span class="lib-title">setNearbyPlayers</span>
+                <span class="lib-sub">Pick nearby player</span>
+            </button>
+            <button class="lib-btn" type="button" onclick="exampleForm()">
+                <span class="lib-icon">📝</span>
+                <span class="lib-title">setForm</span>
+                <span class="lib-sub">Multi-field input</span>
+            </button>
+            <button class="lib-btn" type="button" onclick="examplePaySheet()">
+                <span class="lib-icon">💳</span>
+                <span class="lib-title">setPaySheet</span>
+                <span class="lib-sub">Payment confirm</span>
+            </button>
+        </div>
+
+        <div class="result-panel">
+            <div class="result-label">Last result</div>
+            <pre id="lastResult">— nothing called yet —</pre>
+        </div>
+
         <div class="actions">
             <button class="action-btn btn-reset" type="button" onclick="resetCounter()">Reset</button>
             <button class="action-btn btn-notify" type="button" onclick="showNotification()">Notify</button>
@@ -217,7 +354,7 @@
                     break;
 
                 case "broadcast":
-                    // Server'dan gelen broadcast mesajları
+                    // Broadcast messages from the server
                     break;
             }
         });
@@ -281,6 +418,122 @@
 
         function closeApp() {
             window.parent.postMessage({ type: "mphone:close" }, "*");
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // COMPONENTS LIBRARY — globalThis.components.* examples
+        // The SDK is auto-injected into the iframe by codem-phone; you can call
+        // these methods directly with no extra wiring required.
+        // ════════════════════════════════════════════════════════════════════════
+
+        function setLastResult(label, payload) {
+            const el = document.getElementById("lastResult");
+            if (!el) return;
+            el.textContent = "[" + label + "]\n" + JSON.stringify(payload, null, 2);
+        }
+
+        function ensureComponents() {
+            if (typeof globalThis.components === "undefined") {
+                setLastResult("error",
+                    { error: "globalThis.components was not injected — is the app running inside the phone?" });
+                return false;
+            }
+            return true;
+        }
+
+        // ── 1) setPopUp — confirm dialog (N buttons + per-button cb) ───────────
+        async function examplePopUp() {
+            if (!ensureComponents()) return;
+            const result = await components.setPopUp({
+                title: "Reset phone?",
+                description: "All your data will be wiped. This cannot be undone.",
+                buttons: [
+                    { title: "Cancel",  color: "red",  cb: () => console.log("[popup] cancelled") },
+                    { title: "Continue", color: "blue", cb: () => console.log("[popup] confirmed") }
+                ]
+            });
+            setLastResult("setPopUp", result);
+        }
+
+        // ── 2) setContactSelector — pick one of the phone's contacts ───────────
+        async function exampleContactSelector() {
+            if (!ensureComponents()) return;
+            const result = await components.setContactSelector({
+                title: "Send to whom?",
+                onSelect: (contact) => console.log("[contact] picked:", contact)
+            });
+            setLastResult("setContactSelector", result);
+        }
+
+        // ── 3) setGallery — photo picker (multi-select) ────────────────────────
+        async function exampleGallery() {
+            if (!ensureComponents()) return;
+            const result = await components.setGallery({
+                title: "Pick a photo",
+                multiselect: true,
+                imageOnly: true,
+                maxAmount: 4,
+                onSelect: (urls) => console.log("[gallery] selected URLs:", urls)
+            });
+            setLastResult("setGallery", result);
+        }
+
+        // ── 4) setEmojiPickerVisible — open/close the emoji picker ─────────────
+        async function exampleEmojiPicker() {
+            if (!ensureComponents()) return;
+            const result = await components.setEmojiPickerVisible(true, {
+                onSelect: (emoji) => console.log("[emoji] picked:", emoji)
+            });
+            setLastResult("setEmojiPickerVisible", result);
+            // Programmatic close: components.setEmojiPickerVisible(false);
+        }
+
+        // ── 5) setNearbyPlayers — nearby player picker ─────────────────────────
+        async function exampleNearbyPlayers() {
+            if (!ensureComponents()) return;
+            const result = await components.setNearbyPlayers({
+                title: "Pick a player",
+                onSelect: (player) => console.log("[nearby] picked:", player)
+            });
+            setLastResult("setNearbyPlayers", result);
+        }
+
+        // ── 6) setForm — multi-field input (interval is optional) ──────────────
+        async function exampleForm() {
+            if (!ensureComponents()) return;
+            const result = await components.setForm({
+                title: "Add New Contact",
+                description: "Fill in the details to add a phonebook entry.",
+                confirmText: "Add",
+                fields: [
+                    { placeholder: "Full name", value: "", type: "text" },
+                    { placeholder: "Phone",     value: "", type: "number" }
+                ],
+                interval: { hours: "08", minutes: "30", label: "Reminder", suffix: "hours" },
+                onConfirm: (fields, interval) => {
+                    console.log("[form] submitted:", fields, "interval:", interval);
+                }
+            });
+            setLastResult("setForm", result);
+        }
+
+        // ── 7) setPaySheet — payment confirmation (auto multi-item total) ──────
+        async function examplePaySheet() {
+            if (!ensureComponents()) return;
+            const result = await components.setPaySheet({
+                title: "Cart checkout",
+                accountName: "Aiakos Bank — **** 4832",
+                fromLabel: "Pay from account",
+                confirmLabel: "Pay now",
+                items: [
+                    { label: "Premium membership",  amount: 49.90 },
+                    { label: "Extra storage (50GB)", amount: 19.90 },
+                    { label: "Discount",            amount: -9.80 }
+                ],
+                onConfirm: (r) => console.log("[pay] confirmed, total:", r.total),
+                onCancel:  ()  => console.log("[pay] cancelled")
+            });
+            setLastResult("setPaySheet", result);
         }
 
         // Standalone test (file:// or localhost)

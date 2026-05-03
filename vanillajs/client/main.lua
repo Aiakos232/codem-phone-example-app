@@ -53,7 +53,7 @@ function LoadPhoneApp()
         notification = true,
 
         -- App Store options (only used when addAppStore = true)
-        addAppStore = Config.addToAppStore,                                                                   -- If true, app appears in App Store instead of home screen
+        addAppStore = true,                                                                                   -- If true, app appears in App Store instead of home screen
         developer = 'Example Developer',                                                                      -- Optional: Developer name shown in App Store
         headerImage =
         "https://aiakos.net/codem/api.php?script=codem-phone&subfolder=appstoreswiperitems&file=twix-1.webp", -- Optional: Header image for App Store page (e.g., 'nui://phone-app-example/ui/header.png')
@@ -69,7 +69,7 @@ function LoadPhoneApp()
             -- ['police'] = { 3, 4 },  -- Only police grade 3 and 4
             -- ['ambulance'] = true     -- All ambulance grades
         },
-
+        games = true, -- Optional: If true, app is hidden when player is in a game (e.g., inside a vehicle)
         onOpen = function()
             print('[EXAMPLE-APP] Counter app opened')
         end,

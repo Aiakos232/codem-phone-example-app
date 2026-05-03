@@ -64,3 +64,22 @@ export function close() {
 export function setWaypoint(x, y) {
     window.parent.postMessage({ type: "mphone:waypoint", x, y }, "*");
 }
+
+/**
+ * Get the auto-injected Components SDK (globalThis.components).
+ * Returns `undefined` when the app is running outside the phone (e.g. standalone
+ * Vite dev server / file://); skip calls in that case.
+ *
+ * Available methods:
+ *  - setPopUp({ title, description, buttons }) → Promise<{ confirmed, buttonIndex, cancelled }>
+ *  - setContactSelector({ title, onSelect }) → Promise<{ cancelled, contact }>
+ *  - setGallery({ title, multiselect, imageOnly, videoOnly, maxAmount, onSelect }) → Promise<{ cancelled, url, urls }>
+ *  - setEmojiPickerVisible(visible, { onSelect }) → Promise<{ cancelled, emoji }>
+ *  - setNearbyPlayers({ title, onSelect }) → Promise<{ cancelled, player }>
+ *  - setForm({ title, description, confirmText, fields, interval, onConfirm }) → Promise<{ cancelled, fields, interval }>
+ *  - setPaySheet({ title, accountName, fromLabel, confirmLabel, items, onConfirm, onCancel }) → Promise<{ cancelled, confirmed, total }>
+ *  - close(which?) → void
+ */
+export function getComponents() {
+    return typeof window !== "undefined" ? window.components : undefined;
+}
